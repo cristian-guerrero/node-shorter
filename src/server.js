@@ -29,8 +29,8 @@ server.getContentType = url => {
 
   for (const k in mimeTypes) {
 
-    if (extName === key) {
-      contentType = mimeTypes[key]
+    if (extName === k) {
+      contentType = mimeTypes[k]
       break
     }
   }
@@ -62,28 +62,28 @@ let allowedPaths = {}
 
 server.getallowedDynamicPath = path => {
   for (const k in allowedPaths) {
-    if (allowedPaths.hasOwnproperty(key)) {
+    if (allowedPaths.hasOwnProperty(k)) {
 
-      if(path === key ) {
+      if (path === k) {
         return path;
       }
     }
   }
-  return false 
+  return false
 }
 
-server.serveDynamicContent = (request, response ) => {
+server.serveDynamicContent = (request, response) => {
   const method = request.method.toLowerCase()
 
   const parsedUrl = url.parse(request.url, true)
-  const {pathname, query } = parsedUrl
+  const { pathname, query } = parsedUrl
 
-  let buffer =[]
+  let buffer = []
 
-  request.on('errror', error => {
+  request.on('error', error => {
     console.log('Error Ocurred', error)
     response.writeHead(500)
-    response.end('Error occurred: ' , error)
+    response.end('Error occurred: ', error)
   })
 
   request.on('data', chunk => {
@@ -97,20 +97,46 @@ server.serveDynamicContent = (request, response ) => {
       method, pathname, query, buffer
     }
 
-    const hadler  = allowedPaths[pathname]
+    const hadler = allowedPaths[pathname]
 
 
-    hadler(responseData, (statusCode = 200, data ={}) => {
+    hadler(responseData, (statusCode = 200, data = {}) => {
       response.writeHead(statusCode)
+      data = JSON.stringify(data)
       response.end(data)
-    } )
-
+    })
 
   })
 
 }
 
+const httpServer = http.createServer((request, response) => {
+  const pathName = url.parse(request.url, false).pathname
 
-module.exports  = {
-  baseDir
+  const dynamicPath = server.getallowedDynamicPath(pathName)
+
+  if (dynamicPath) {
+    server.serveDynamicContent(request, response)
+  } else {
+    server.serveStaticContent(pathName, response)
+  }
+
+})
+
+
+server.setAllowedPaths = paths => {
+  allowedPaths = paths
+}
+
+
+server.init = ( (port = 4321, host = '127.0.0.1') =>{
+
+  httpServer.listen(port, host, () => {
+    console.log(`Server is listening at http://${host}:${port}`)
+  })
+})
+
+
+module.exports = {
+  baseDir, server
 }
