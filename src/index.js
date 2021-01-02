@@ -1,17 +1,13 @@
 
 require('./env')()
+
 const {server} = require('./server')
 
-
-const testHandler = (responseData, callback ) => {
-
-  callback(200, {msg: 'The message'})
-}
+const routes = require('./routes')
 
 
-const paths = {
-  '/api/test': testHandler
-}
-server.setAllowedPaths(paths)
+
+
+server.setAllowedPaths(routes)
 
 server.init()

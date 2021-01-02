@@ -3,6 +3,7 @@ const http = require('http')
 const path = require('path')
 const fs = require('fs')
 const url = require('url')
+const {URL} = require('url')
 const { chdir } = require('process')
 
 
@@ -60,19 +61,19 @@ server.serveStaticContent = (pathName, response) => {
 
 let allowedPaths = {}
 
-server.getallowedDynamicPath = path => {
-  for (const k in allowedPaths) {
-    if (allowedPaths.hasOwnProperty(k)) {
+server.getallowedDynamicPath = ({ path, method }) => {
 
-      if (path === k) {
-        return path;
-      }
+
+  for (const r of allowedPaths) {
+    if (r.url === path && r.method.toLowerCase() === method) {
+      return r
     }
   }
+
   return false
 }
 
-server.serveDynamicContent = (request, response) => {
+server.serveDynamicContent = (request, response, callback) => {
   const method = request.method.toLowerCase()
 
   const parsedUrl = url.parse(request.url, true)
@@ -93,14 +94,14 @@ server.serveDynamicContent = (request, response) => {
   request.on('end', () => {
     buffer = Buffer.concat(buffer)
 
+
+    const body = JSON.parse(buffer.toString())
+
     const responseData = {
-      method, pathname, query, buffer
+      method, pathname, query, body
     }
 
-    const hadler = allowedPaths[pathname]
-
-
-    hadler(responseData, (statusCode = 200, data = {}) => {
+    callback(responseData, ( data = {},statusCode = 200) => {
       response.writeHead(statusCode)
       data = JSON.stringify(data)
       response.end(data)
@@ -111,14 +112,17 @@ server.serveDynamicContent = (request, response) => {
 }
 
 const httpServer = http.createServer((request, response) => {
-  const pathName = url.parse(request.url, false).pathname
+  const path = url.parse(request.url, false).pathname
 
-  const dynamicPath = server.getallowedDynamicPath(pathName)
+  const method = request.method.toLowerCase()
+
+  const dynamicPath = server.getallowedDynamicPath({ path, method })
+
 
   if (dynamicPath) {
-    server.serveDynamicContent(request, response)
+    server.serveDynamicContent(request, response, dynamicPath.callback)
   } else {
-    server.serveStaticContent(pathName, response)
+    server.serveStaticContent(path, response)
   }
 
 })
@@ -129,7 +133,7 @@ server.setAllowedPaths = paths => {
 }
 
 
-server.init = ( (port = 4321, host = '127.0.0.1') =>{
+server.init = ((port = 4321, host = '127.0.0.1') => {
 
   httpServer.listen(port, host, () => {
     console.log(`Server is listening at http://${host}:${port}`)
@@ -140,3 +144,4 @@ server.init = ( (port = 4321, host = '127.0.0.1') =>{
 module.exports = {
   baseDir, server
 }
+
