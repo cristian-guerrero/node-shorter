@@ -1,0 +1,19 @@
+# docker-compose.yml
+version: '3'
+services:
+  db:
+    image: "postgres:11-alpine"
+    env_file:
+      - .env # configure postgres
+    volumes:
+      - shorter-database-data:/var/lib/postgresql/data/ # persist data even if container shuts down
+      # - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./sql:/docker-entrypoint-initdb.d/
+    ports:
+    - 7432:5432
+volumes:
+  shorter-database-data: # named volumes can be managed easier using docker-compose
+
+
+# docker-compose down -v
+# docker-compose up -d
