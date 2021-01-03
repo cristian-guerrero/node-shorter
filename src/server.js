@@ -102,8 +102,8 @@ server.serveDynamicContent = (request, response, callback) => {
     }
 
     callback(responseData, ( data = {},statusCode = 200) => {
-      response.writeHead(statusCode)
-      data = JSON.stringify(data)
+      response.writeHead(statusCode, {'Content-Type': 'application/json'})
+      data =  JSON.stringify(data)
       response.end(data)
     })
 

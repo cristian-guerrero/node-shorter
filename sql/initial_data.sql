@@ -1,7 +1,7 @@
--- drop table if EXISTS  url;
+DROP TABLE IF EXISTS url;
 
-CREATE  TABLE if not exists url
+CREATE TABLE IF NOT EXISTS url
 (
-  id  SERIAL PRIMARY KEY,
+  id  VARCHAR PRIMARY KEY,
   url VARCHAR NOT NULL
 );

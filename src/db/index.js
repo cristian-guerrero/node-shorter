@@ -1,12 +1,12 @@
-const { Pool, Client } = require('pg')
+const { randomBytes } = require('crypto')
+const { Pool } = require('pg')
 const {
   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_DB_PORT, POSTGRES_DB_HOST,
 } = process.env
 
 //
-const connectionString = `postgresql://${ POSTGRES_USER }:${ POSTGRES_PASSWORD }@${ POSTGRES_DB_HOST }:${ POSTGRES_DB_PORT }/${ POSTGRES_DB }`
-console.log(connectionString)
-const pool = new Pool({
+
+const poolConnectionObject = {
   //connectionString,
   host: POSTGRES_DB_HOST,
   port: POSTGRES_DB_PORT,
@@ -19,7 +19,11 @@ const pool = new Pool({
   idleTimeoutMillis: 20000,
   connectionTimeoutMillis: 2000,
 
-})
+}
+
+const connectionString = `postgresql://${ POSTGRES_USER }:${ POSTGRES_PASSWORD }@${ POSTGRES_DB_HOST }:${ POSTGRES_DB_PORT }/${ POSTGRES_DB }`
+console.log(connectionString)
+const pool = new Pool(poolConnectionObject)
 
 
 /* 
@@ -33,6 +37,21 @@ pool.query('SELECT NOW()', (err, res) => {
 */
 
 class Db {
+  static BEGIN = 'BEGIN'
+  static COMMIT = 'COMMIT'
+  static ROLLBACK = 'ROLLBACK'
+
+  get newId  ()  {
+    const size = 10
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '0123456789';
+    let objectId = '';
+    const bytes = randomBytes(size);
+    for (let i = 0; i < bytes.length; ++i) {
+      objectId += chars[ bytes.readUInt8(i) % chars.length ];
+    }
+    return objectId;
+  }
+
 
   query = async ({ text, values, name }) => {
 
@@ -61,7 +80,7 @@ class Db {
 
       await client.query('BEGIN')
       for (const q of queries) {
-       result.push( await client.query(q.text, q.values))
+        result.push(await client.query(q.text, q.values))
       }
 
       await client.query('COMMIT')
